@@ -27,10 +27,12 @@ namespace SmeuArchief.Commands
                 // remove it from the database
                 if(await smeuService.RemoveAsync(input, Context.User.Id).ConfigureAwait(false))
                 {
+                    // if remove was successful, reply with success
                     await ReplyAsync($"{input} is hersteld!").ConfigureAwait(false);
                 }
                 else
                 {
+                    // if remove was unsuccessful, reply with failure
                     await ReplyAsync($"Ik kon geen inzending van jouw vinden voor {input}").ConfigureAwait(false);
                 }
             }

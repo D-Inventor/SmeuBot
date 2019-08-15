@@ -149,11 +149,11 @@ namespace SmeuArchief.Services
                     // check if a duplicate must take this submission's place
                     if(submission.Duplicates.Count > 0)
                     {
+                        // if so, take the oldest duplicate and change the details of the submission to these.
                         duplicate = (from d in submission.Duplicates
                                      orderby d.Date ascending
                                      select d).First();
 
-                        // change details of this submission to the first duplicate
                         submission.Author = duplicate.Author;
                         submission.Date = duplicate.Date;
                         submission.MessageId = duplicate.MessageId;
@@ -163,6 +163,7 @@ namespace SmeuArchief.Services
                     }
                     else
                     {
+                        // if not, just remove the submission from the database
                         database.Submissions.Remove(submission);
                     }
 
@@ -170,6 +171,7 @@ namespace SmeuArchief.Services
                     return true;
                 }
 
+                // if there was no duplicate and no original, return failure
                 return false;
             }
         }

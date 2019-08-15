@@ -25,6 +25,7 @@ namespace SmeuArchief.Services
 
         private async Task SetStateMessageAsync()
         {
+            // set the activity state to 'Watching all your activities'
             await client.SetGameAsync("all your activities", type: ActivityType.Watching).ConfigureAwait(false);
         }
 
@@ -32,7 +33,10 @@ namespace SmeuArchief.Services
         {
             foreach (var guild in client.Guilds)
             {
+                // log all the guilds that are restored.
                 await logger.LogAsync(new LogMessage(LogSeverity.Info, "RestoreService", $"Restoring {guild.Name}")).ConfigureAwait(false);
+
+                // TODO: Actually add restore logic
             }
         }
 
@@ -41,6 +45,7 @@ namespace SmeuArchief.Services
             await logger.LogAsync(new LogMessage(LogSeverity.Info, "RestoreService", "Start database migration")).ConfigureAwait(false);
             try
             {
+                // try to migrate the database to the latest version
                 using (SmeuContext context = smeuBaseFactory.GetSmeuBase())
                 {
                     context.Database.Migrate();
@@ -48,6 +53,7 @@ namespace SmeuArchief.Services
             }
             catch (Exception e)
             {
+                // log failure and stop the application
                 await logger.LogAsync(new LogMessage(LogSeverity.Critical, "RestoreService", "Attempted to migrate the database, but failed.", e)).ConfigureAwait(false);
                 Environment.Exit(-1);
             }

@@ -11,6 +11,7 @@ namespace SmeuArchief.Commands
         {
             using (var typing = Context.Channel.EnterTypingState())
             {
+                // send response to discord
                 await ReplyAsync($"Hallo {Context.User.Mention}!").ConfigureAwait(false);
             }
         }

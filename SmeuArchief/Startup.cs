@@ -19,6 +19,7 @@ namespace SmeuArchief
         {
             if (!File.Exists(settingspath))
             {
+                // if the settings file doesn't exist, create a default one instead, report to user and stop the application
                 SimpleSettings.Settings.ToFile<Settings>(null, settingspath);
                 Console.WriteLine("No settings file was found, so a default one was created instead. please edit this file and restart the bot.");
                 Environment.Exit(-1);
@@ -26,10 +27,12 @@ namespace SmeuArchief
 
             try
             {
+                // try to read the settings from the file
                 Settings = SimpleSettings.Settings.FromFile<Settings>(settingspath);
             }
             catch (Exception e)
             {
+                // report failure and stop the application
                 Console.WriteLine($"Attempted to read settings from settings file, but failed: {e.Message}\n{e.StackTrace}");
                 Environment.Exit(-1);
             }
@@ -37,15 +40,18 @@ namespace SmeuArchief
 
         public static async Task RunAsync(string[] args)
         {
+            // create a startup object and start
             Startup startup = new Startup(args);
             await startup.RunAsync().ConfigureAwait(false);
         }
 
         public async Task RunAsync()
         {
+            // create services
             ServiceCollection services = new ServiceCollection();
             ConfigureServices(services);
 
+            // initialise services that require initialisation
             IServiceProvider provider = services.BuildServiceProvider();
             provider.GetRequiredService<LogService>();
             provider.GetRequiredService<CommandHandler>();
@@ -59,6 +65,7 @@ namespace SmeuArchief
 
         private void ConfigureServices(IServiceCollection services)
         {
+            // add all services
             services.AddSingleton(new DiscordSocketClient(new DiscordSocketConfig
             {
                 LogLevel = Settings.LogLevel,
@@ -69,7 +76,7 @@ namespace SmeuArchief
                 DefaultRunMode = RunMode.Async,
                 CaseSensitiveCommands = false,
             }))
-            .AddSingleton<Settings>(Settings)
+            .AddSingleton(Settings)
             .AddSingleton<IContextSettingsProvider>(Settings)
             .AddSingleton<SmeuBaseFactory>()
             .AddSingleton<SmeuService>()

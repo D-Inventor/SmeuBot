@@ -26,13 +26,16 @@ namespace SmeuArchief.Services
         {
             if (string.IsNullOrWhiteSpace(settings.Token))
             {
+                // report to the user if the discord token is invalid and stop the application
                 await Console.Out.WriteLineAsync("The given token is invalid. Please insert a valid token in the settings file and restart.").ConfigureAwait(false);
                 Environment.Exit(-1);
             }
 
+            // log in to discord
             await client.LoginAsync(TokenType.Bot, settings.Token).ConfigureAwait(false);
             await client.StartAsync().ConfigureAwait(false);
 
+            // register all commands
             await commands.AddModulesAsync(Assembly.GetEntryAssembly(), services).ConfigureAwait(false);
         }
     }

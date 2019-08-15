@@ -6,7 +6,6 @@ using SmeuBase;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace SmeuArchief.Commands
@@ -59,7 +58,6 @@ namespace SmeuArchief.Commands
             public async Task GetSmeu([Remainder, Name("Smeu")]string input)
             {
                 input = input.ToLower();
-
                 await GetSmeuReply(input).ConfigureAwait(false);
             }
 
@@ -67,6 +65,7 @@ namespace SmeuArchief.Commands
             {
                 using (var typing = Context.Channel.EnterTypingState())
                 {
+                    // create the embed and send it to discord
                     Embed embed = await GatherSmeuData(input).ConfigureAwait(false);
                     await ReplyAsync(embed: embed).ConfigureAwait(false);
                 }
@@ -126,13 +125,14 @@ namespace SmeuArchief.Commands
 
                         SubmissionFields = new EmbedFieldBuilder[]
                         {
-                            new EmbedFieldBuilder { Name="Autheur", Value=user.Username},
-                            new EmbedFieldBuilder {Name="Datum", Value=$"{submission.Date:d-MMMM-yyyy H:mm} UTC"},
-                            new EmbedFieldBuilder {Name="\u200B", Value="\u200B"}
+                            new EmbedFieldBuilder { Name = "Autheur", Value = user.Username },
+                            new EmbedFieldBuilder { Name = "Datum", Value = $"{submission.Date:d-MMMM-yyyy H:mm} UTC" },
+                            new EmbedFieldBuilder { Name = "\u200B", Value = "\u200B" }
                         };
                     }
                 });
 
+                // make sure everything is done before continuing
                 await Task.WhenAll(similarSmeuTask, submissionTask).ConfigureAwait(false);
 
                 eb.WithFields(SubmissionFields.Concat(similarFields));
@@ -145,18 +145,21 @@ namespace SmeuArchief.Commands
             {
                 using (SmeuContext database = smeuBaseFactory.GetSmeuBase())
                 {
+                    // read from data
                     var dbresult = (from s in database.Submissions
                                     let d = Levenshtein.GetLevenshteinDistance(s.Smeu, input)
                                     where s.Smeu != input && d <= 4
                                     orderby d, s.Smeu
                                     select new { Submission = s, Similarity = Levenshtein.GetSimilarity(input, s.Smeu, d) }).Take(5);
 
+                    // convert database result to list
                     List<(Submission, float)> similars = new List<(Submission, float)>(5);
-                    foreach(var a in dbresult)
+                    foreach (var a in dbresult)
                     {
                         similars.Add((a.Submission, a.Similarity));
                     }
 
+                    // return the list
                     return similars;
                 }
             }

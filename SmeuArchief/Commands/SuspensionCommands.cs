@@ -20,6 +20,7 @@ namespace SmeuArchief.Commands
                     return;
                 }
 
+                // try unsuspend given user and return if this was succesful or not
                 if (await smeuService.UnsuspendAsync(user.Id, Context.User.Id).ConfigureAwait(false)) { await ReplyAsync($"{user.Mention} is niet meer af!").ConfigureAwait(false); }
                 else { await ReplyAsync("Deze gebruiker kan niet afgetikt worden omdat deze niet af is!").ConfigureAwait(false); }
             }
@@ -30,6 +31,7 @@ namespace SmeuArchief.Commands
         {
             using(var typing = Context.Channel.EnterTypingState())
             {
+                // find the given smeu in the duplicates list
                 Duplicate duplicate;
                 using(SmeuContext database = smeuBaseFactory.GetSmeuBase())
                 {
@@ -40,16 +42,20 @@ namespace SmeuArchief.Commands
 
                 if(duplicate == null)
                 {
+                    // if no such duplicate exists, return this to the user
                     await ReplyAsync("Nee, dat klopt niet.").ConfigureAwait(false);
                     return;
                 }
 
+                // try suspend the user on this ground
                 if(await smeuService.SuspendAsync(user.Id, Context.User.Id, $"{smeu} is al eerder genoemd.", duplicate))
                 {
+                    // reply with success
                     await ReplyAsync($"{user.Mention} is nu **af**!").ConfigureAwait(false);
                 }
                 else
                 {
+                    // reply with failure
                     await ReplyAsync($"{user.Username} is al af!").ConfigureAwait(false);
                 }
             }
