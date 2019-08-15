@@ -74,8 +74,6 @@ namespace SmeuArchief.Commands
 
             private async Task<Embed> GatherSmeuData(string input)
             {
-                List<(Submission, float)> similars;
-
                 // create embed for given word
                 EmbedBuilder eb = new EmbedBuilder()
                     .WithTitle($"__{input}__")
@@ -88,7 +86,7 @@ namespace SmeuArchief.Commands
                 Task similarSmeuTask = Task.Run(() =>
                 {
                     // find similars
-                    similars = GetSimilarSmeu(input);
+                    List<(Submission, float)> similars = GetSimilarSmeu(input);
                     if (similars.Any())
                     {
                         // if there are any similar smeu, create fields for the smeu and their similarity value
