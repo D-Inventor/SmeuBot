@@ -25,13 +25,13 @@ namespace SmeuArchief.Commands
                 input = input.ToLower();
 
                 // remove it from the database
-                if(await smeuService.RemoveAsync(input, Context.User.Id))
+                if(await smeuService.RemoveAsync(input, Context.User.Id).ConfigureAwait(false))
                 {
-                    await ReplyAsync($"{input} is hersteld!");
+                    await ReplyAsync($"{input} is hersteld!").ConfigureAwait(false);
                 }
                 else
                 {
-                    await ReplyAsync($"Ik kon geen inzending van jouw vinden voor {input}");
+                    await ReplyAsync($"Ik kon geen inzending van jouw vinden voor {input}").ConfigureAwait(false);
                 }
             }
         }

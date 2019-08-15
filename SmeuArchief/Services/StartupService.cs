@@ -26,14 +26,14 @@ namespace SmeuArchief.Services
         {
             if (string.IsNullOrWhiteSpace(settings.Token))
             {
-                await Console.Out.WriteLineAsync("The given token is invalid. Please insert a valid token in the settings file and restart.");
+                await Console.Out.WriteLineAsync("The given token is invalid. Please insert a valid token in the settings file and restart.").ConfigureAwait(false);
                 Environment.Exit(-1);
             }
 
-            await client.LoginAsync(TokenType.Bot, settings.Token);
-            await client.StartAsync();
+            await client.LoginAsync(TokenType.Bot, settings.Token).ConfigureAwait(false);
+            await client.StartAsync().ConfigureAwait(false);
 
-            await commands.AddModulesAsync(Assembly.GetEntryAssembly(), services);
+            await commands.AddModulesAsync(Assembly.GetEntryAssembly(), services).ConfigureAwait(false);
         }
     }
 }

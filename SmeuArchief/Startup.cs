@@ -38,7 +38,7 @@ namespace SmeuArchief
         public static async Task RunAsync(string[] args)
         {
             Startup startup = new Startup(args);
-            await startup.RunAsync();
+            await startup.RunAsync().ConfigureAwait(false);
         }
 
         public async Task RunAsync()
@@ -52,9 +52,9 @@ namespace SmeuArchief
             provider.GetRequiredService<SmeuService>();
 
             // restore state of the bot and start
-            await provider.GetRequiredService<RestoreService>().RestoreAsync();
-            await provider.GetRequiredService<StartupService>().StartAsync();
-            await Task.Delay(-1);
+            await provider.GetRequiredService<RestoreService>().RestoreAsync().ConfigureAwait(false);
+            await provider.GetRequiredService<StartupService>().StartAsync().ConfigureAwait(false);
+            await Task.Delay(-1).ConfigureAwait(false);
         }
 
         private void ConfigureServices(IServiceCollection services)

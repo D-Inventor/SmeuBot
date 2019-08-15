@@ -22,16 +22,16 @@ namespace SmeuArchief.Services
 
         public async Task LogAsync(LogMessage arg)
         {
-            await Console.Out.WriteLineAsync($"[{arg.Severity.ToString().PadLeft(8)}] {DateTime.UtcNow} [{arg.Source.PadRight(15)}] {arg.Message}");
-            if (arg.Exception != null) { await LogExceptionAsync(arg.Exception); }
+            await Console.Out.WriteLineAsync($"[{arg.Severity.ToString().PadLeft(8)}] {DateTime.UtcNow} [{arg.Source.PadRight(15)}] {arg.Message}").ConfigureAwait(false);
+            if (arg.Exception != null) { await LogExceptionAsync(arg.Exception).ConfigureAwait(false); }
         }
 
         private async Task LogExceptionAsync(Exception exception)
         {
-            await Console.Out.WriteLineAsync();
-            await Console.Out.WriteLineAsync($"{exception.Message}\n{exception.StackTrace}");
+            await Console.Out.WriteLineAsync().ConfigureAwait(false);
+            await Console.Out.WriteLineAsync($"{exception.Message}\n{exception.StackTrace}").ConfigureAwait(false);
 
-            if(exception.InnerException != null) { await LogExceptionAsync(exception.InnerException); }
+            if(exception.InnerException != null) { await LogExceptionAsync(exception.InnerException).ConfigureAwait(false); }
         }
     }
 }

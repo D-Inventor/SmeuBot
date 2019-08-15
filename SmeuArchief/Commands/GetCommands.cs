@@ -4,6 +4,7 @@ using Discord.WebSocket;
 using SmeuArchief.Utilities;
 using SmeuBase;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -37,7 +38,7 @@ namespace SmeuArchief.Commands
                                        select s;
 
                         // if nobody is suspended, notify the user about that
-                        if (dbresult.Count() == 0) { await ReplyAsync("Er is op dit moment helemaal niemand af!"); }
+                        if (dbresult.Count() == 0) { await ReplyAsync("Er is op dit moment helemaal niemand af!").ConfigureAwait(false); }
                         else
                         {
                             // present the suspensions in an embed
@@ -48,7 +49,7 @@ namespace SmeuArchief.Commands
                             {
                                 eb.AddField(client.GetUser(suspension.User).Username, suspension);
                             }
-                            await ReplyAsync(embed: eb.Build());
+                            await ReplyAsync(embed: eb.Build()).ConfigureAwait(false);
                         }
                     }
                 }
@@ -66,77 +67,100 @@ namespace SmeuArchief.Commands
             {
                 using (var typing = Context.Channel.EnterTypingState())
                 {
-                    Embed embed = GatherSmeuData(input);
-
-                    await ReplyAsync(embed: embed);
+                    Embed embed = await GatherSmeuData(input).ConfigureAwait(false);
+                    await ReplyAsync(embed: embed).ConfigureAwait(false);
                 }
             }
 
-            private Embed GatherSmeuData(string input)
+            private async Task<Embed> GatherSmeuData(string input)
             {
+                List<(Submission, float)> similars;
+
                 // create embed for given word
                 EmbedBuilder eb = new EmbedBuilder()
                     .WithTitle($"__{input}__")
                     .WithColor(Color.LightOrange);
 
-                // find existing submission in database
-                Submission submission;
-                using (SmeuContext database = smeuBaseFactory.GetSmeuBase())
+                IEnumerable<EmbedFieldBuilder> similarFields = new EmbedFieldBuilder[0];
+                IEnumerable<EmbedFieldBuilder> SubmissionFields = new EmbedFieldBuilder[0];
+
+                // Run a task that finds similar smeu
+                Task similarSmeuTask = Task.Run(() =>
                 {
-                    submission = (from s in database.Submissions
-                                  where s.Smeu == input
-                                  select s).FirstOrDefault();
-                }
-
-                // add potential existing submission to the embed
-                if (submission != null)
-                {
-                    SocketUser user = client.GetUser(submission.Author);
-
-                    eb = eb.WithThumbnailUrl(user.GetAvatarUrl());
-                    eb.AddField("Auteur", user.Username);
-                    eb.AddField("Datum", $"{submission.Date:d-MMMM-yyyy H:mm} UTC");
-                    eb.AddField("\u200B", "\u200B");
-                }
-
-                // add similar smeu to the embed
-                using (SmeuContext database = smeuBaseFactory.GetSmeuBase())
-                {
-                    // find the similar smeu and sort them by similarity
-                    var top = from s in database.Submissions
-                              let d = Levenshtein.GetLevenshteinDistance(s.Smeu, input)
-                              where s.Smeu != input && d <= 4
-                              orderby d, s.Smeu
-                              select new { Submission = s, Similarity = d };
-
-                    int i = 0;
-                    StringBuilder sbsmeu = new StringBuilder();
-                    StringBuilder sbsimilarity = new StringBuilder();
-                    if (top.Any())
+                    // find similars
+                    similars = GetSimilarSmeu(input);
+                    if (similars.Any())
                     {
-                        foreach (var r in top)
+                        // if there are any similar smeu, create fields for the smeu and their similarity value
+                        similarFields = new EmbedFieldBuilder[]
                         {
-                            // add each similar smeu and its similarity value to the embed, up to 5 smeu
-                            sbsmeu.AppendLine(r.Submission.Smeu);
-                            sbsimilarity.AppendLine($"({Math.Round(Levenshtein.GetSimilarity(r.Submission.Smeu, input, r.Similarity) * 100)}%)");
-
-                            i++;
-                            if (i > 4) { break; }
-                        }
-
-                        // apply stringbuilders to embed
-                        eb.AddField("Vergelijkbaar met:", sbsmeu.ToString(), true);
-                        eb.AddField("\u200B", sbsimilarity.ToString(), true);
+                            new EmbedFieldBuilder { IsInline = true, Name = "Vergelijkbaar met", Value = string.Join("\n", similars.Select(s => s.Item1.Smeu)) },
+                            new EmbedFieldBuilder { IsInline = true, Name = "\u200B", Value = string.Join("\n", similars.Select(x => Math.Round(x.Item2 * 100).ToString() + "%")) }
+                        };
                     }
                     else
                     {
-                        // show it if there are no similar smeu
-                        eb.AddField("Vergelijkbaar met:", "*Geen vergelijkbare smeu*");
+                        // if there are no similar smeu, just create one field with indicating that there are no similar smeu
+                        similarFields = new EmbedFieldBuilder[]
+                        {
+                            new EmbedFieldBuilder { IsInline = true, Name = "Vergelijkbaar met", Value = "*Geen vergelijkbare smeu*" }
+                        };
                     }
-                }
+                });
+
+                Task submissionTask = Task.Run(() =>
+                {
+                    // find existing submission in database
+                    Submission submission;
+                    using (SmeuContext database = smeuBaseFactory.GetSmeuBase())
+                    {
+                        submission = (from s in database.Submissions
+                                      where s.Smeu == input
+                                      select s).FirstOrDefault();
+                    }
+
+                    // add potential existing submission to the embed
+                    if (submission != null)
+                    {
+                        SocketUser user = client.GetUser(submission.Author);
+
+                        eb.WithThumbnailUrl(user.GetAvatarUrl());
+
+                        SubmissionFields = new EmbedFieldBuilder[]
+                        {
+                            new EmbedFieldBuilder { Name="Autheur", Value=user.Username},
+                            new EmbedFieldBuilder {Name="Datum", Value=$"{submission.Date:d-MMMM-yyyy H:mm} UTC"},
+                            new EmbedFieldBuilder {Name="\u200B", Value="\u200B"}
+                        };
+                    }
+                });
+
+                await Task.WhenAll(similarSmeuTask, submissionTask).ConfigureAwait(false);
+
+                eb.WithFields(SubmissionFields.Concat(similarFields));
 
                 // return the result
                 return eb.Build();
+            }
+
+            private List<(Submission, float)> GetSimilarSmeu(string input)
+            {
+                using (SmeuContext database = smeuBaseFactory.GetSmeuBase())
+                {
+                    var dbresult = (from s in database.Submissions
+                                    let d = Levenshtein.GetLevenshteinDistance(s.Smeu, input)
+                                    where s.Smeu != input && d <= 4
+                                    orderby d, s.Smeu
+                                    select new { Submission = s, Similarity = Levenshtein.GetSimilarity(input, s.Smeu, d) }).Take(5);
+
+                    List<(Submission, float)> similars = new List<(Submission, float)>(5);
+                    foreach(var a in dbresult)
+                    {
+                        similars.Add((a.Submission, a.Similarity));
+                    }
+
+                    return similars;
+                }
             }
         }
     }

@@ -16,12 +16,12 @@ namespace SmeuArchief.Commands
                 if (user == Context.User)
                 {
                     // users are not allowed to unsuspend themselves
-                    await ReplyAsync("Het is niet toegestaan om jezelf af te tikken, stiekemerd!");
+                    await ReplyAsync("Het is niet toegestaan om jezelf af te tikken, stiekemerd!").ConfigureAwait(false);
                     return;
                 }
 
-                if (await smeuService.UnsuspendAsync(user.Id, Context.User.Id)) { await ReplyAsync($"{user.Mention} is niet meer af!"); }
-                else { await ReplyAsync("Deze gebruiker kan niet afgetikt worden omdat deze niet af is!"); }
+                if (await smeuService.UnsuspendAsync(user.Id, Context.User.Id).ConfigureAwait(false)) { await ReplyAsync($"{user.Mention} is niet meer af!").ConfigureAwait(false); }
+                else { await ReplyAsync("Deze gebruiker kan niet afgetikt worden omdat deze niet af is!").ConfigureAwait(false); }
             }
         }
 
@@ -40,17 +40,17 @@ namespace SmeuArchief.Commands
 
                 if(duplicate == null)
                 {
-                    await ReplyAsync("Nee, dat klopt niet.");
+                    await ReplyAsync("Nee, dat klopt niet.").ConfigureAwait(false);
                     return;
                 }
 
                 if(await smeuService.SuspendAsync(user.Id, Context.User.Id, $"{smeu} is al eerder genoemd.", duplicate))
                 {
-                    await ReplyAsync($"{user.Mention} is nu **af**!");
+                    await ReplyAsync($"{user.Mention} is nu **af**!").ConfigureAwait(false);
                 }
                 else
                 {
-                    await ReplyAsync($"{user.Username} is al af!");
+                    await ReplyAsync($"{user.Username} is al af!").ConfigureAwait(false);
                 }
             }
         }

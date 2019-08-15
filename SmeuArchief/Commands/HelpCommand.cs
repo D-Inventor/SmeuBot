@@ -49,7 +49,7 @@ namespace SmeuArchief.Commands
                     }
                 }
 
-                await ReplyAsync(embed: eb.Build());
+                await ReplyAsync(embed: eb.Build()).ConfigureAwait(false);
             }
         }
 
@@ -62,7 +62,7 @@ namespace SmeuArchief.Commands
 
                 if (!result.IsSuccess)
                 {
-                    await ReplyAsync($"Het spijt me, maar ik kan geen commando vinden die **{command}** heet.");
+                    await ReplyAsync($"Het spijt me, maar ik kan geen commando vinden die **{command}** heet.").ConfigureAwait(false);
                     return;
                 }
 
@@ -86,7 +86,7 @@ namespace SmeuArchief.Commands
                     });
                 }
 
-                await ReplyAsync(embed: eb.Build());
+                await ReplyAsync(embed: eb.Build()).ConfigureAwait(false);
             }
         }
     }

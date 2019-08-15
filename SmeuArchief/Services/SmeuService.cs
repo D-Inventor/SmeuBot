@@ -13,17 +13,12 @@ namespace SmeuArchief.Services
         private readonly DiscordSocketClient client;
         private readonly SmeuBaseFactory smeuBaseFactory;
         private readonly Settings settings;
-        private readonly LogService logger;
 
-        private readonly Emoji acceptEmoji = new Emoji("\u2705");
-        private readonly Emoji denyEmoji = new Emoji("\u274C");
-
-        public SmeuService(DiscordSocketClient client, SmeuBaseFactory smeuBaseFactory, Settings settings, LogService logger)
+        public SmeuService(DiscordSocketClient client, SmeuBaseFactory smeuBaseFactory, Settings settings)
         {
             this.client = client;
             this.smeuBaseFactory = smeuBaseFactory;
             this.settings = settings;
-            this.logger = logger;
 
             client.MessageReceived += SaveSmeuAsync;
         }
@@ -38,12 +33,12 @@ namespace SmeuArchief.Services
             // is user allowed to submit a smeu?
             if (GetUserSuspension(arg.Author.Id) != null)
             {
-                await msg.DeleteAsync();
+                await msg.DeleteAsync().ConfigureAwait(false);
                 return;
             }
 
             // add it to the database
-            await AddAsync(msg.Content.ToLower(), msg.CreatedAt.UtcDateTime, msg.Author.Id, msg.Id);
+            await AddAsync(msg.Content.ToLower(), msg.CreatedAt.UtcDateTime, msg.Author.Id, msg.Id).ConfigureAwait(false);
         }
 
         public async Task<bool> SuspendAsync(ulong user, ulong suspender, string reason, Duplicate duplicate = null)
@@ -65,7 +60,7 @@ namespace SmeuArchief.Services
                     duplicate.Suspension = suspension;
                     database.Duplicates.Update(duplicate);
                 }
-                await database.SaveChangesAsync();
+                await database.SaveChangesAsync().ConfigureAwait(false);
             }
             return true;
         }
@@ -85,7 +80,7 @@ namespace SmeuArchief.Services
                 using (SmeuContext context = smeuBaseFactory.GetSmeuBase())
                 {
                     context.Suspensions.Update(suspension);
-                    await context.SaveChangesAsync();
+                    await context.SaveChangesAsync().ConfigureAwait(false);
                 }
                 return true;
             }
@@ -106,14 +101,14 @@ namespace SmeuArchief.Services
                 {
                     // create a duplicate if an original already exists
                     database.Duplicates.Add(new Duplicate { Author = author, Date = date, MessageId=messageid, Original = dbresult });
-                    await database.SaveChangesAsync();
+                    await database.SaveChangesAsync().ConfigureAwait(false);
                     return false;
                 }
                 else
                 {
                     // otherwise add it to the database
                     database.Submissions.Add(new Submission { Author = author, Date = date, MessageId = messageid, Smeu = smeu });
-                    await database.SaveChangesAsync();
+                    await database.SaveChangesAsync().ConfigureAwait(false);
                     return true;
                 }
             }
@@ -132,24 +127,24 @@ namespace SmeuArchief.Services
                 if(duplicate != null)
                 {
                     // remove the duplicate
-                    IMessage msg = await (client.GetChannel(settings.SmeuChannelId) as IMessageChannel).GetMessageAsync(duplicate.MessageId);
-                    await msg.DeleteAsync();
+                    IMessage msg = await (client.GetChannel(settings.SmeuChannelId) as IMessageChannel).GetMessageAsync(duplicate.MessageId).ConfigureAwait(false);
+                    await msg.DeleteAsync().ConfigureAwait(false);
 
                     database.Duplicates.Remove(duplicate);
-                    await database.SaveChangesAsync();
+                    await database.SaveChangesAsync().ConfigureAwait(false);
                     return true;
                 }
 
                 // check if there is an original
                 Submission submission = await (from s in database.Submissions
                                                where s.Author == author && s.Smeu == smeu
-                                               select s).Include(x => x.Duplicates).FirstOrDefaultAsync();
+                                               select s).Include(x => x.Duplicates).FirstOrDefaultAsync().ConfigureAwait(false);
 
                 if(submission != null)
                 {
                     // remove the original message
-                    IMessage msg = await (client.GetChannel(settings.SmeuChannelId) as IMessageChannel).GetMessageAsync(submission.MessageId);
-                    await msg.DeleteAsync();
+                    IMessage msg = await (client.GetChannel(settings.SmeuChannelId) as IMessageChannel).GetMessageAsync(submission.MessageId).ConfigureAwait(false);
+                    await msg.DeleteAsync().ConfigureAwait(false);
 
                     // check if a duplicate must take this submission's place
                     if(submission.Duplicates.Count > 0)
@@ -171,7 +166,7 @@ namespace SmeuArchief.Services
                         database.Submissions.Remove(submission);
                     }
 
-                    await database.SaveChangesAsync();
+                    await database.SaveChangesAsync().ConfigureAwait(false);
                     return true;
                 }
 
