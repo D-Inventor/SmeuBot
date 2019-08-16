@@ -12,12 +12,14 @@ namespace SmeuArchief.Services
     {
         private readonly DiscordSocketClient client;
         private readonly SmeuBaseFactory smeuBaseFactory;
+        private readonly RestoreService restoreService;
         private readonly Settings settings;
 
-        public SmeuService(DiscordSocketClient client, SmeuBaseFactory smeuBaseFactory, Settings settings)
+        public SmeuService(DiscordSocketClient client, SmeuBaseFactory smeuBaseFactory, RestoreService restoreService, Settings settings)
         {
             this.client = client;
             this.smeuBaseFactory = smeuBaseFactory;
+            this.restoreService = restoreService;
             this.settings = settings;
 
             client.MessageReceived += SaveSmeuAsync;
@@ -31,7 +33,7 @@ namespace SmeuArchief.Services
             if (msg.Channel.Id != settings.SmeuChannelId) { return; }
 
             // is user allowed to submit a smeu?
-            if (GetUserSuspension(arg.Author.Id) != null)
+            if (!restoreService.IsRestoreComplete || GetUserSuspension(arg.Author.Id) != null)
             {
                 await msg.DeleteAsync().ConfigureAwait(false);
                 return;

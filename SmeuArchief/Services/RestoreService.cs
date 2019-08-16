@@ -15,6 +15,13 @@ namespace SmeuArchief.Services
         private readonly Settings settings;
         private readonly LogService logger;
 
+        private Task smeuRestoreTask = Task.CompletedTask;
+
+        public bool IsRestoreComplete
+        {
+            get { return smeuRestoreTask.IsCompleted; }
+        }
+
         public RestoreService(DiscordSocketClient client, SmeuBaseFactory smeuBaseFactory, Settings settings, LogService logger)
         {
             this.client = client;
@@ -34,6 +41,7 @@ namespace SmeuArchief.Services
 
         private async Task RestorePendingSmeuAsync()
         {
+            await client.SetGameAsync("Restoring state...", type: ActivityType.Watching).ConfigureAwait(false);
             foreach (var guild in client.Guilds)
             {
                 // log all the guilds that are restored.
@@ -42,7 +50,10 @@ namespace SmeuArchief.Services
                 // TODO: Actually add restore logic
             }
 
-            await AddPendingSmeuToChat();
+            smeuRestoreTask = AddPendingSmeuToChat().ContinueWith(async x =>
+            {
+                await client.SetGameAsync("Restore complete", type: ActivityType.Watching).ConfigureAwait(false);
+            }, TaskContinuationOptions.RunContinuationsAsynchronously);
         }
 
         private async Task AddPendingSmeuToChat()
@@ -67,16 +78,8 @@ namespace SmeuArchief.Services
                     // send all unassigned smeu to the chat and update the database
                     IUserMessage msg = await smeuChannel.SendMessageAsync(submission.Smeu).ConfigureAwait(false);
                     submission.MessageId = msg.Id;
-                    database.Submissions.Update(submission);
-                    try
-                    {
-                        await database.SaveChangesAsync().ConfigureAwait(false);
-                    }
-                    catch(DbUpdateException e)
-                    {
-                        await logger.LogAsync(new LogMessage(LogSeverity.Error, "RestoreService", "Attempted to save restore to database, but failed.", e)).ConfigureAwait(false);
-                    }
                 }
+                database.Submissions.UpdateRange(dbresult);
                 await database.SaveChangesAsync().ConfigureAwait(false);
                 await logger.LogAsync(new LogMessage(LogSeverity.Info, "RestoreService", "All smeu are restored")).ConfigureAwait(false);
             }
