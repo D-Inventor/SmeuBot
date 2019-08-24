@@ -24,8 +24,4 @@
     <ProjectReference Include="..\SmeuBase\SmeuBase.csproj" />
   </ItemGroup>
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="if $(ConfigurationName) == Release (&#xD;&#xA;dotnet publish -c release -r win10-x64&#xD;&#xA;)" />
-  </Target>
-
 </Project>
